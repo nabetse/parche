@@ -162,7 +162,7 @@
   </div>
 
   <div class="rd-foot">
-    <span class="rd-key"><i class="rd-dot"></i>Persona interesada</span>
+    <span class="rd-key"><i class="rd-dot"></i>Persona en contacto</span>
     <span class="rd-key"><i class="rd-dot rd-hollow"></i>Por contactar</span>
     <span class="rd-key"><i class="rd-box"></i>Colectivo, proyecto u organización</span>
     <span class="rd-key"><i class="rd-box rd-ac"></i>Universidad</span>
@@ -179,16 +179,14 @@
   "use strict";
 
   /* ================= CONFIGURACIÓN ================= */
-  // Si lo dejás vacío, el mapa te pide la URL la primera vez y la recuerda.
-  // Para publicar en WordPress conviene pegarla acá.
+  // Pegá acá la URL /exec de la aplicación web de Apps Script.
   var API = "https://script.google.com/macros/s/AKfycbwwUTy3Q_1Z37O5mT99vQnkdXVXkk5Zo9fzcHVkbl-gd0J_ckhlwBfHRW3ki2MNnaWr/exec";
 
   var TITULO = "El parche posible";
 
   // Acomodo fijo. Se pega acá con el botón "Guardar acomodo".
   // Vacío ({}) = el mapa se acomoda solo.
-  var POSICIONES = {"boris-teran":[521,437],"alejando-araque":[696,742],"felipe-rodriguez":[555,846],"adrian-acosta":[234,805],"laura-melo":[650,412],"miguel-mejia":[772,564],"hugo-chavez":[328,869],"nate-looker":[-13,621],"paulo-landa":[137,854],"esteban-rey":[261,629],"paula-falla":[603,538],"juan-carlos-munoz":[526,599],"teatro-lit":[36,963],"nodos-cacharreo-lab":[855,865],"nodo-duitama":[572,335],"creatv":[138,708],"sindicato-audiovisual":[485,1024],"unal":[884,978],"u-javeriana":[912,759],"u-compensar":[928,661],"u-stanford":[-147,559],"u-guadalajara":[185,1074],"soil-life-suelo-y-vida":[78,517],"monstra":[292,515]};
-  
+  var POSICIONES = {};
   /* ================================================= */
 
   var PAPEL = "#E9EDE4", PAPEL_ALT = "#DFE5D8", TINTA = "#16241E", SUAVE = "#5C6B5F",
@@ -205,6 +203,14 @@
   var GLOSA = { "Compañía":"trabajan juntas", "Parche":"cercanía", "Líder":"dirige",
                 "Socio":"alianza", "Miembro":"estudia o enseña ahí" };
   function estiloDe(t) { return ESTILO[t] || { color:SUAVE, w:2.4, dash:"4 5" }; }
+
+  /* El estado de la invitación tiene varios valores: Por contactar, Contactada,
+     Interesada, Activa, Declinó. El círculo se llena para todas menos la primera
+     y la última, así no hay que enumerarlas una por una. */
+  function enContacto(n) {
+    var e = (n.estado || "").toLowerCase();
+    return e.indexOf("por contactar") === -1 && e.indexOf("declin") === -1;
+  }
 
   var BW = 1500, BH = 1100, NS = "http://www.w3.org/2000/svg";
   var VB = { x:0, y:0, w:BW, h:BH }, filaSueltos = null;
@@ -594,7 +600,7 @@
     nodos.forEach(function (n) {
       var g = crear("g", { "class":"rd-node", tabindex:"0", role:"button", "aria-label":n.etiqueta });
       if (n.clase === "persona") {
-        var lleno = n.estado === "Interesado";
+        var lleno = enContacto(n);
         g.appendChild(lleno
           ? crear("circle", { r:n.r, fill:VERDE })
           : crear("circle", { r:n.r, fill:PAPEL, stroke:VERDE, "stroke-width":3, "stroke-dasharray":"6 5" }));
@@ -708,7 +714,7 @@
 
   function abrirPanel(n) {
     var tipoTxt = n.clase === "persona"
-      ? (n.estado === "Interesado" ? "Persona · ya interesada" : "Persona · " + n.estado.toLowerCase())
+      ? "Persona · " + (n.estado || "sin estado").toLowerCase()
       : (n.clase === "academia" ? "Universidad" : (n.tipo === "proyecto" ? "Proyecto" : "Colectivo"));
     var h = "<h3>" + esc(n.etiqueta) + "</h3><p class='rd-kind'>" + esc(tipoTxt) +
             (n.lugar ? " · " + esc(n.lugar) : "") + "</p>";
@@ -803,7 +809,7 @@
     nodos.forEach(function (n) {
       var ok = true;
       if (filtros.personas && n.clase !== "persona") ok = false;
-      if (filtros.pendientes && !(n.clase === "persona" && n.estado !== "Interesado")) ok = false;
+      if (filtros.pendientes && !(n.clase === "persona" && !enContacto(n))) ok = false;
       if (q2 && (n.etiqueta + " " + n.claves.join(" ") + " " + n.lugar).toLowerCase().indexOf(q2) === -1) ok = false;
       if (temas.length && !n.claves.some(function (k) { return temas.indexOf(k) !== -1; })) ok = false;
       visible[n.id] = ok;
@@ -973,7 +979,7 @@
   function leyendaSVG(ancho, y) {
     var g = crear("g", {});
     g.appendChild(crear("rect", { x:60, y:y, width:ancho - 120, height:250, rx:14, fill:PAPEL_ALT }));
-    var formas = [["lleno", VERDE, "Persona ya interesada"], ["hueco", VERDE, "Persona por contactar"],
+    var formas = [["lleno", VERDE, "Persona en contacto"], ["hueco", VERDE, "Persona por contactar"],
                   ["caja", NARANJA, "Colectivo, proyecto u organización"], ["caja", AZUL, "Universidad"]];
     formas.forEach(function (f, i) {
       var yy = y + 44 + i * 50;
